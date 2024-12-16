@@ -18,6 +18,7 @@
 
 vm_impl *vm = NULL;
 const char *lc3os_obj = NULL;
+uint16_t running=1;
 
 vm_impl *vm_create(void)
 {
@@ -69,25 +70,20 @@ void updateFlags(uint16_t r)
 
 void add(uint16_t ins)
 {
-    // check 5 th bit for mod
-    uint16_t flag = ((ins) & (1 << 5));
-    uint16_t reg1 = ((ins) & ((0x0007) << 6));
-    uint16_t num1 = vm->reg[reg1];
-    uint16_t dest = ((ins) & ((0x0007) << 9));
-    uint16_t num2 = 0;
-    printf("num1----%d\n", num1);
-    if (flag == 0)
+    uint16_t dest = DR(ins);
+    uint16_t sr1 = SR1(ins);
+    uint16_t imm_flag = (ins >> 5) & 0x1;
+
+    if (imm_flag)
     {
-        uint16_t reg2 = (ins) & (0x0007);
-        num2 = vm->reg[reg2];
+        uint16_t imm5 = sign_extend(ins & 0x1F, 5);
+        vm->reg[dest] = vm->reg[sr1] + imm5;
     }
     else
     {
-        num2 = sign_extend((ins) & (0x001F), 5);
+        uint16_t sr2 = SR2(ins);
+        vm->reg[dest] = vm->reg[sr1] + vm->reg[sr2];
     }
-
-    printf("num2----%d\n", num2);
-    vm->reg[dest] = num1 + num2;
     updateFlags(dest);
 }
 /*AND*/
@@ -306,5 +302,69 @@ vm_run_result vm_run(vm_impl *vm)
     return VM_RUN_SUCCESS;
 }
 
+// uint16_t running=1;
+op_ex_f op_ex[NOPS] = { 
+    add, add, add, add, add, add, add, add, add, add, add, add, add, add, add, trap
+};
+trp_ex_f trp_ex[8]={tgetch,tout,tputs,tin,tputsp,thalt,tinu16,toutu16};
+
+void trap(uint16_t instr){
+    trp_ex[TRP(instr)-trp_offset]();
+}
+
+// Trap Function	TRAPVECT	trp_ex[] index	Comments
+// tgetc	0x20	0	Reads a character (char) from the keyboard that get copied in R0
+// tout	0x21	1	Writes the character (char) from R0 to the console.
+// tputs	0x22	2	Writes a string of characters to the console. As a rule, the characters are kept in a contiguous memory location, one char per memory location. Starting with the address specified in R0. If 0x0000 is encountered, printing stops.
+// tin	0x23	3	Reads a character (char) from the keyboard, and it gets copied in R0. Afterward, the char is printed on the console.
+// tputsp	0x24	4	Not implemented. This trap is used to store 2 characters per memory location instead of 1. Otherwise, it works like tputs. It’s left out as an exercise.
+// thalt	0x25	5	Halts execution of the program. The VM stops.
+// tinu16	0x26	6	Reads a uint16_t from the keyboard and stores it in R0.
+// toutu16	0x27	7	Writes the uint16_t found inside R0.
 
 
+void tgetch(){
+    vm->reg[RO]=getchar();
+}
+
+void tout(){
+    putchar(vm->reg[RO]);
+    fflush(stdout);
+}
+
+void tputs(){
+    uint16_t* st_addr=(uint16_t*) (vm->mem+vm->reg[RO]);
+
+    while(*(st_addr)){
+        putchar(*(st_addr));
+        (st_addr)++;
+    }
+}
+
+void tin(){
+    vm->reg[RO]=getchar();
+    putchar(vm->reg[RO]);
+    fflush(stdout);
+}
+
+void tputsp(){
+    uint16_t* st_addr=(uint16_t*) (vm->mem+vm->reg[RO]);
+
+    while(*(st_addr)){
+        putchar(*(st_addr));
+        (st_addr)++;
+    }
+}
+
+
+void thalt(uint16_t *running){
+    running=0;
+}
+
+void tinu16(){
+    scanf("%hu",&vm->reg[RO]);
+}
+
+void toutu16(){
+    printf("%hu\n",vm->reg[RO]);
+}

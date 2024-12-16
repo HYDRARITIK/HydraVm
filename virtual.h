@@ -175,6 +175,29 @@ void add(uint16_t instruction);
 //     br, add, ld, st, jsr, and, ldr, str, rti, not, ldi, sti, jmp, res, lea, trap 
 // };
 
-// op_ex_f op_ex[NOPS] = { 
-//     add, add
-// };
+
+
+#define TRP(I) ((I)&0xFF)
+
+void tgetch();
+void tout();
+void tputs();
+void tin();
+void tputsp();
+void thalt();
+void tinu16();
+void toutu16();
+
+enum {trp_offset=0x20};
+
+typedef void(*trp_ex_f)();
+
+
+void trap(uint16_t instruction);
+ 
+// extern uint16_t running;
+
+extern op_ex_f op_ex[NOPS];
+extern trp_ex_f trp_ex[8];
+extern uint16_t running;
+

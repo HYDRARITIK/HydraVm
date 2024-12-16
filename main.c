@@ -45,20 +45,25 @@ void ld_image(char *fname,uint16_t offset){
 
     fclose(fd);
 }
+// op_ex_f op_ex[NOPS] = { 
+//     add, add, add, add, add, add, add, add, add, add, add, add, add, add, add, trap
+// };
 
-uint16_t running=1;
 void start(uint16_t offset) { 
     vm->reg[R_PC] = pc_Start + offset; // The RPC is set
-    while(running<10) {
+    while(running) {
         uint16_t i = memRead(vm->reg[R_PC]++); // We extract instructions from the memory
                                      // location pointed by RPC           
                                      // We (auto)increment RPC       
-        add(i)   ;         // We execute each instruction
-        running++;
+        op_ex[OPC(i)](i)  ;         // We execute each instruction
+        // running++;
     }
 }
 int main(int argc, char **argv) {
     // create a VM
+    // running=1;
+    // uint16_t *running=1;
+    // running=1;
     vm = vm_create();
     assert(vm != NULL);
     printf("vm created\n");
