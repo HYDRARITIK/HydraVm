@@ -1,9 +1,9 @@
 
 #include "stdio.h"
 #include "stdlib.h"
-// #include "virtual.h"
+#include "virtual.h"
 
-#define uint16_t unsigned short
+// #define uint16_t unsigned short
 
 uint16_t program[] = {
     /*mem[0x3000]=*/0xF026, //  1111 0000 0010 0110             TRAP trp_in_u16  ;read an uint16_t from stdin and put it in R0
@@ -14,7 +14,6 @@ uint16_t program[] = {
     /*mem[0x3007]=*/0xF027, //  1111 0000 0010 0111             TRAP trp_out_u16;show the contents of R0 to stdout
     /*mem[0x3006]=*/0xF025, //  1111 0000 0010 0101             HALT             ;halt
 };
-
 int main(int argc, char **argv)
 {
     char *outf = "sum.obj";

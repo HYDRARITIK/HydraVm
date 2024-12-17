@@ -52,8 +52,8 @@ enum
 enum
 {
     Fl_POS = 1 << 0,
-    FL_NEG = 1 << 1,
-    FL_ZER = 1 << 2
+    FL_NEG = 1 << 2,
+    FL_ZER = 1 << 1
 };
 
  

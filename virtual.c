@@ -18,7 +18,7 @@
 
 vm_impl *vm = NULL;
 const char *lc3os_obj = NULL;
-uint16_t running=1;
+uint16_t running = 1;
 
 vm_impl *vm_create(void)
 {
@@ -68,52 +68,166 @@ void updateFlags(uint16_t r)
 // INstrunction
 /*ADD*/
 
-void add(uint16_t ins)
+void add(uint16_t i)
 {
-    uint16_t dest = DR(ins);
-    uint16_t sr1 = SR1(ins);
-    uint16_t imm_flag = (ins >> 5) & 0x1;
+    uint16_t dest = DR(i);
+    uint16_t sr1 = SR1(i);
+    uint16_t imm_flag = (i >> 5) & 0x1;
 
     if (imm_flag)
     {
-        uint16_t imm5 = sign_extend(ins & 0x1F, 5);
+        uint16_t imm5 = sign_extend(i & 0x1F, 5);
         vm->reg[dest] = vm->reg[sr1] + imm5;
     }
     else
     {
-        uint16_t sr2 = SR2(ins);
+        uint16_t sr2 = SR2(i);
         vm->reg[dest] = vm->reg[sr1] + vm->reg[sr2];
     }
     updateFlags(dest);
 }
 /*AND*/
-void AND(uint16_t instr)
+void AND(uint16_t i)
 {
-    uint16_t dest = (instr >> 9) & 0x7;
-    uint16_t r1 = (instr >> 6) & 0x7;
-    uint16_t imm_flag = (instr >> 5) & 0x1;
+    uint16_t dest = DR(i);
+    uint16_t sr1 = SR1(i);
+    uint16_t imm_flag = (i >> 5) & 0x1;
 
     if (imm_flag)
     {
-        uint16_t imm5 = sign_extend(instr & 0x1F, 5);
-        vm->reg[dest] = vm->reg[r1] & imm5;
+        uint16_t imm5 = sign_extend(i & 0x1F, 5);
+        vm->reg[dest] = vm->reg[sr1] & imm5;
     }
     else
     {
-        uint16_t r2 = instr & 0x7;
-        vm->reg[dest] = vm->reg[r1] & vm->reg[r2];
+        uint16_t r2 = i & 0x7;
+        vm->reg[dest] = vm->reg[sr1] & vm->reg[r2];
     }
     updateFlags(dest);
 }
 /*NOT*/
-void NOT(uint16_t instr)
+void NOT(uint16_t i)
 {
-    uint16_t dest = (instr >> 9) & 0x7;
-    uint16_t r1 = (instr >> 6) & 0x7;
+    uint16_t dest = DR(i);
+    uint16_t sr = SR1(i);
 
-    vm->reg[dest] = ~vm->reg[r1];
+    vm->reg[dest] = ~vm->reg[sr];
     updateFlags(dest);
 }
+
+/*ld*/
+// load data from main memory to destination register
+#define POFF9(i) (i & ((1 << 9) - 1));
+#define POFF6(i) (i & ((1 << 6) - 1));
+#define POFF11(i) (i & ((1 << 11) - 1));
+void ld(uint16_t i)
+{
+    uint16_t dr = DR(i);
+    uint16_t pc_offset = POFF9(i);
+
+    vm->reg[dr] = vm->mem[(vm->reg[R_PC] + pc_offset)];
+
+    updateFlags(dr);
+}
+
+/*ldi  load indirect*/
+
+void ldi(uint16_t i)
+{
+    uint16_t dr = DR(i);
+    uint16_t pc_offset = POFF9(i);
+
+    vm->reg[dr] = vm->mem[vm->mem[(vm->reg[R_PC] + pc_offset)]];
+
+    updateFlags(dr);
+}
+
+/*ldr            load base +offset */
+
+#define BSR(i) ((i >> 6) & 0x7)
+void ldr(uint16_t i)
+{
+    uint16_t dr = DR(i);
+    uint16_t pc_offset = POFF6(i);
+    uint16_t baser = BSR(i);
+
+    vm->reg[dr] = vm->mem[(vm->reg[baser] + pc_offset)];
+    updateFlags(dr);
+}
+
+/*lea load effective address*/
+
+void lea(uint16_t i)
+{
+    uint16_t dr = DR(i);
+    uint16_t pc_offset = POFF9(i);
+    // uint16_t baser=BSR(i);
+
+    vm->reg[dr] = (vm->reg[R_PC] + pc_offset);
+    updateFlags(dr);
+}
+
+void not(uint16_t i)
+{
+    vm->reg[DR(i)] = ~vm->reg[SR1(i)];
+    updateFlags(DR(i));
+}
+
+// store operations
+/*st store*/
+void st(uint16_t i)
+{
+    uint16_t sr = DR(i);
+    uint16_t pc_offset = POFF9(i);
+
+    vm->mem[vm->reg[R_PC] + pc_offset] = vm->reg[sr];
+}
+
+/*sti store indirect*/
+void sti(uint16_t i)
+{
+    uint16_t sr = DR(i);
+    uint16_t pc_offset = POFF9(i);
+    vm->mem[vm->mem[vm->reg[R_PC] + pc_offset]] = vm->reg[sr];
+}
+/*str - Store base + offset
+
+*/
+
+void str(uint16_t i)
+{
+    uint16_t sr = DR(i);
+    uint16_t baser = BSR(i);
+    uint16_t pc_offset = POFF6(i);
+
+    vm->mem[vm->reg[baser] + pc_offset] = vm->reg[sr];
+}
+/*jump */
+void jmp(uint16_t i)
+{
+    vm->reg[R_PC] = vm->reg[BSR(i)];
+}
+
+/*jsr - Jump to subroutines*/
+
+void jsr(uint16_t i)
+{
+    uint16_t pc_offset = POFF11(i);
+    vm->reg[R7] = vm->reg[R_PC];
+    vm->reg[R_PC] = ((i >> 10) & 0x1) ? (vm->reg[R_PC] + pc_offset) : (vm->reg[BSR(i)]);
+}
+
+/*BR*/
+#define NZP(i) (((i) >> 9) & 0x7)
+void br(uint16_t i)
+{
+
+    uint16_t pc_offset = POFF9(i);
+    if (vm->reg[R_COND] & NZP(i))
+        vm->reg[R_PC] += pc_offset;
+}
+
+
 
 uint16_t memRead(uint16_t addr)
 {
@@ -131,7 +245,7 @@ uint16_t memRead(uint16_t addr)
     }
     else if (addr == VM_ADDR_KBDR)
     {
-        if (memRead( VM_ADDR_KBSR))
+        if (memRead(VM_ADDR_KBSR))
         {
             return getchar();
         }
@@ -303,13 +417,13 @@ vm_run_result vm_run(vm_impl *vm)
 }
 
 // uint16_t running=1;
-op_ex_f op_ex[NOPS] = { 
-    add, add, add, add, add, add, add, add, add, add, add, add, add, add, add, trap
-};
-trp_ex_f trp_ex[8]={tgetch,tout,tputs,tin,tputsp,thalt,tinu16,toutu16};
+op_ex_f op_ex[NOPS] = {
+    add, add, add, add, add, add, add, add, add, add, add, add, add, add, add, trap};
+trp_ex_f trp_ex[8] = {tgetch, tout, tputs, tin, tputsp, thalt, tinu16, toutu16};
 
-void trap(uint16_t instr){
-    trp_ex[TRP(instr)-trp_offset]();
+void trap(uint16_t instr)
+{
+    trp_ex[TRP(instr) - trp_offset]();
 }
 
 // Trap Function	TRAPVECT	trp_ex[] index	Comments
@@ -322,49 +436,57 @@ void trap(uint16_t instr){
 // tinu16	0x26	6	Reads a uint16_t from the keyboard and stores it in R0.
 // toutu16	0x27	7	Writes the uint16_t found inside R0.
 
-
-void tgetch(){
-    vm->reg[RO]=getchar();
+void tgetch()
+{
+    vm->reg[RO] = getchar();
 }
 
-void tout(){
+void tout()
+{
     putchar(vm->reg[RO]);
     fflush(stdout);
 }
 
-void tputs(){
-    uint16_t* st_addr=(uint16_t*) (vm->mem+vm->reg[RO]);
+void tputs()
+{
+    uint16_t *st_addr = (uint16_t *)(vm->mem + vm->reg[RO]);
 
-    while(*(st_addr)){
+    while (*(st_addr))
+    {
         putchar(*(st_addr));
         (st_addr)++;
     }
 }
 
-void tin(){
-    vm->reg[RO]=getchar();
+void tin()
+{
+    vm->reg[RO] = getchar();
     putchar(vm->reg[RO]);
     fflush(stdout);
 }
 
-void tputsp(){
-    uint16_t* st_addr=(uint16_t*) (vm->mem+vm->reg[RO]);
+void tputsp()
+{
+    uint16_t *st_addr = (uint16_t *)(vm->mem + vm->reg[RO]);
 
-    while(*(st_addr)){
+    while (*(st_addr))
+    {
         putchar(*(st_addr));
         (st_addr)++;
     }
 }
 
-
-void thalt(uint16_t *running){
-    running=0;
+void thalt(uint16_t *running)
+{
+    running = 0;
 }
 
-void tinu16(){
-    scanf("%hu",&vm->reg[RO]);
+void tinu16()
+{
+    scanf("%hu", &vm->reg[RO]);
 }
 
-void toutu16(){
-    printf("%hu\n",vm->reg[RO]);
+void toutu16()
+{
+    printf("%hu\n", vm->reg[RO]);
 }
