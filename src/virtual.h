@@ -1,10 +1,12 @@
 // #include <assert.h>
-
+#pragma once
 #define max_memory (1 << 16)
 #define pc_Start 0x3000
-#define NOPS (16) // number of instructions
+
 
 typedef unsigned short uint16_t;
+
+#define TRP(I) ((I)&0xFF)
 
 typedef enum __Reg
 {
@@ -25,7 +27,7 @@ typedef enum __Reg
 
 typedef enum __flags
 {
-    Fl_POS = 1 << 0,
+    FL_POS = 1 << 0,
     FL_ZER = 1 << 1,
     FL_NEG = 1 << 2
 } _flags;
@@ -57,4 +59,11 @@ void vm_destroy(vm_impl *vm);
 
 uint16_t memRead(uint16_t addr);
 void mem_write(uint16_t addr, uint16_t val);
+uint16_t sign_extend(uint16_t x, int bitCNt);
+uint16_t swap16(uint16_t x);
+void updateFlags(uint16_t r);
 
+
+// external definition with global scope
+extern vm_impl *vm;
+extern uint16_t running;

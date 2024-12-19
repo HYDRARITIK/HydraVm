@@ -6,7 +6,7 @@ uint16_t running = 1;
 
 vm_impl *vm_create(void)
 {
-    vm_impl *vm = (vm_impl *)calloc(1, sizeof(vm_impl));
+    vm = (vm_impl *)calloc(1, sizeof(vm_impl));
 
     vm->reg[R_PC] = pc_Start;
     vm->reg[R_COND] = FL_ZER;
@@ -45,7 +45,7 @@ void updateFlags(uint16_t r)
     }
     else
     {
-        vm->reg[R_COND] = Fl_POS;
+        vm->reg[R_COND] = FL_POS;
     }
 }
 
@@ -64,6 +64,4 @@ uint16_t swap16(uint16_t x)
     return (x << 8) | (x >> 8);
 }
 
-
 // uint16_t running=1;
-

@@ -5,10 +5,10 @@
 #include "stdio.h"
 #include "virtual.h"
 
-#define TRP(I) ((I)&0xFF)
 
-extern vm_impl *vm;
-enum {trp_offset=0x20};
+
+// extern vm_impl *vm;
+trp_ex_f trp_ex[8] = {tgetch, tout, tputs, tin, tputsp, thalt, tinu16, toutu16};
 
 
 void TRAP(uint16_t instr)
@@ -81,4 +81,3 @@ void toutu16()
     printf("%hu\n", vm->reg[RO]);
 }
 
-trp_ex_f trp_ex[8] = {tgetch, tout, tputs, tin, tputsp, thalt, tinu16, toutu16};

@@ -1,20 +1,23 @@
+// #include "instruction.h"
+
+#pragma once
+#include "virtual.h"
 #include "instruction.h"
-typedef unsigned short uint16_t;
-typedef enum
+typedef enum _vm_load_result
 {
     VM_LOAD_SUCCESS,
     VM_LOAD_INPUT_NOT_FOUND,
     VM_LOAD_INPUT_TOO_LARGE,
 } vm_load_result;
 
-typedef enum
+typedef enum _vm_run_result
 {
     VM_RUN_SUCCESS,
     VM_RUN_UNIMPLEMENTED_OPCODE,
 } vm_run_result;
 
 
-typedef enum
+typedef enum _vm_exit_code
 {
     VM_EXIT_SUCCESS,
     VM_EXIT_USAGE,

@@ -1,6 +1,17 @@
 
-extern trp_ex_f trp_ex[8];
+
+#pragma once
+
+
+#include "virtual.h"
+
 typedef void (*trp_ex_f)();
+extern trp_ex_f trp_ex[8];
+
+typedef enum __trapOffset
+{
+    trp_offset = 0x20
+} trap_offset;
 
 // Trap Routines
 typedef enum __trapCode
@@ -13,9 +24,7 @@ typedef enum __trapCode
     TRAP_HALT = 0x25   /* halt the program */
 } trap_code;
 
-
 void TRAP(uint16_t instr);
-
 
 void tgetch();
 void tout();

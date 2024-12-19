@@ -11,6 +11,9 @@
 
 #include "load.h"
 
+#include "assert.h"
+
+
 
 extern char *opcodes[];
 extern vm_impl *vm;

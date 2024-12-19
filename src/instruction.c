@@ -1,20 +1,7 @@
 
 #include "instruction.h"
 #include "stdio.h"
-
-#define POFF9(i) (i & ((1 << 9) - 1));
-#define POFF6(i) (i & ((1 << 6) - 1));
-#define POFF11(i) (i & ((1 << 11) - 1));
-
-#define BSR(i) ((i >> 6) & 0x7)
-#define NZP(i) (((i) >> 9) & 0x7)
-
-
-#define DR(i) (((i)>>9)&0x7)
-#define SR1(i) (((i)>>6)&0x7)
-#define SR2(i) ((i)&0x7)
-#define IMM(i) ((i)&0x1F)
-#define OPC(i) ((i)>>12)
+#include "virtual.h"
 
 extern uint16_t running;
 extern vm_impl *vm;
